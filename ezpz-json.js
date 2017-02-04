@@ -1,3 +1,65 @@
+$.fn.serializeObject = function() {
+  var self = this,
+      json = {},
+      push_counters = {},
+      patterns = {
+          "validate": /^[a-zA-Z][a-zA-Z0-9_-]*(?:\[(?:\d*|[a-zA-Z0-9_-]+)\])*$/,
+          "key":      /[a-zA-Z0-9_-]+|(?=\[\])/g,
+          "push":     /^$/,
+          "fixed":    /^\d+$/,
+          "named":    /^[a-zA-Z0-9_-]+$/
+      };
+
+
+  this.build = function(base, key, value){
+      base[key] = value;
+      return base;
+  };
+
+  this.push_counter = function(key){
+      if(push_counters[key] === undefined){
+          push_counters[key] = 0;
+      }
+      return push_counters[key]++;
+  };
+
+  $.each($(this).serializeArray(), function() {
+    // skip invalid keys
+    if(!patterns.validate.test(this.name)){
+      return;
+    }
+
+    var k,
+      keys = this.name.match(patterns.key),
+      merge = this.value,
+      reverse_key = this.name;
+
+    while((k = keys.pop()) !== undefined) {
+      // adjust reverse_key
+      reverse_key = reverse_key.replace(new RegExp("\\[" + k + "\\]$"), '');
+
+      // push
+      if(k.match(patterns.push)){
+          merge = self.build([], self.push_counter(reverse_key), merge);
+      }
+
+      // fixed
+      else if(k.match(patterns.fixed)){
+          merge = self.build([], k, merge);
+      }
+
+      // named
+      else if(k.match(patterns.named)){
+          merge = self.build({}, k, merge);
+      }
+    }
+
+    json = $.extend(true, json, merge);
+  });
+
+  return json;
+};
+
 $(document).ready(function() {
   //$('#config').change(configChanged);
 });
@@ -16,11 +78,16 @@ var readFile = function(e) {
   var results;
   if (file && file.length) {
     results = JSON.parse(file);
-    console.log(results);
     parseSeriesInfo(results.series);
     parseGameInfo(results.games);
   }
 };
+
+var download = function() {
+  var contents = $('#contents-form').serializeObject();
+  console.log(contents);
+  return false;
+}
 
 var parseSeriesInfo = function(series) {
   var myDiv = $('#series-inputs');
@@ -28,22 +95,22 @@ var parseSeriesInfo = function(series) {
 
   // Series Name
   htmlContents = '<label for="series-name">Series Name: </label>';
-  htmlContents += '<input name="series-name" id="series-name" type="text" value="' + series['series-name'] + '">';
+  htmlContents += '<input name="series[series-name]" id="series-name" type="text" value="' + series['series-name'] + '">';
   htmlContents += '<br />';
 
   // Series CSS File
   htmlContents += '<label for="series-css">CSS Filename: </label>';
-  htmlContents += '<input name="series-css" id="series-css" type="text" value="' + series['series-css'] + '">';
+  htmlContents += '<input name="series[series-css]" id="series-css" type="text" value="' + series['series-css'] + '">';
   htmlContents += '<br />';
 
   // Series Logo Filename
   htmlContents += '<label for="series-logo">Logo Filename: </label>';
-  htmlContents += '<input name="series-logo" id="series-logo" type="text" value="' + series['series-logo'] + '">';
+  htmlContents += '<input name="series[series-logo]" id="series-logo" type="text" value="' + series['series-logo'] + '">';
   htmlContents += '<br />';
 
   // Series Has Timeline
-  htmlContents += '<label for="series-has-timeline">Has Timeline: </label>';
-  htmlContents += '<input name="series-has-timeline" id="series-has-timeline" type="checkbox" checked="';
+  htmlContents += '<label for="has-timeline">Has Timeline: </label>';
+  htmlContents += '<input name="series[has-timeline]" id="has-timeline" type="checkbox" checked="';
   if (series['has-timeline']) {
     htmlContents += 'checked';
   }
@@ -55,7 +122,7 @@ var parseSeriesInfo = function(series) {
   if (series['timeline']) {
     series['timeline'].forEach(function(t, i) {
       var itemId = 'timeline_' + i;
-      htmlContents += '<label for=' + itemId + '>Entry ' + i + '</label><input name="timeline[]" value="' + t + '">';
+      htmlContents += '<label for=' + itemId + '>Entry ' + i + '</label><input name="series[timeline][]" value="' + t + '">';
       htmlContents += '<br />';
     });
   }
@@ -116,9 +183,14 @@ var parseGameInfo = function(games) {
     //     }
     //   ]
     // },
-    htmlContents += '<fieldset><legend><input type="text" name="games[].name" value="' + g['name'] + '"></legend>';
+    htmlContents += '<fieldset><legend><input type="text" name="games[][name]" value="' + g['name'] + '"></legend>';
     htmlContents += '</fieldset>'
   });
 
   myDiv.html(htmlContents);
+}
+
+var buttonClicked = function() {
+  var contents = $('#contents-form').serializeObject();
+  console.log(contents);
 }
