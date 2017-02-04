@@ -6,13 +6,12 @@
   </head>
   <body>
   <div id="controls">
-      <form id="upload-json-form" action="/" method="post" onsubmit="return download();">
         <fieldset>
           <legend>Upload/Download EZPZ JSON</legend>
           <input type="file" name="config" id="config" onchange="configChanged()">
-          <input type="submit" value="Download">
+          <input type="button" value="Download" onclick="download()">
+          <textarea id="download-contents" readonly></textarea>
         </fieldset>
-      </form>
     </div>
     <form id="contents-form" action="/" method="post">
       <fieldset id="contents">

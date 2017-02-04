@@ -86,6 +86,7 @@ var readFile = function(e) {
 var download = function() {
   var contents = $('#contents-form').serializeObject();
   console.log(contents);
+  $('#download-contents').text(JSON.stringify(contents));
   return false;
 }
 
@@ -188,9 +189,4 @@ var parseGameInfo = function(games) {
   });
 
   myDiv.html(htmlContents);
-}
-
-var buttonClicked = function() {
-  var contents = $('#contents-form').serializeObject();
-  console.log(contents);
 }
