@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <title>EZPZ JSON Generator</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+    <script type="text/javascript" src="./ezpz-json.js"></script>
+  </head>
+  <body>
+  <div id="controls">
+      <form id="upload-json-form" action="/" method="post" onsubmit="return download();">
+        <fieldset>
+          <legend>Upload/Download EZPZ JSON</legend>
+          <input type="file" name="config" id="config" onchange="configChanged()">
+          <input type="submit" value="Download">
+        </fieldset>
+      </form>
+    </div>
+    <fieldset id="contents">
+      <legend>Every X Game</legend>
+      <div id="series-inputs"></div>
+      <fieldset>
+        <legend>Games</legend>
+        <div id="games-inputs"></div>
+      </fieldset>
+    </fieldset>
+  </body>
+</html>
