@@ -1,68 +1,70 @@
-$.fn.serializeObject = function() {
-  var self = this,
-      json = {},
-      push_counters = {},
-      patterns = {
-          "validate": /^[a-zA-Z][a-zA-Z0-9_-]*(?:\[(?:\d*|[a-zA-Z0-9_-]+)\])*$/,
-          "key":      /[a-zA-Z0-9_-]+|(?=\[\])/g,
-          "push":     /^$/,
-          "fixed":    /^\d+$/,
-          "named":    /^[a-zA-Z0-9_-]+$/
-      };
-
-
-  this.build = function(base, key, value){
-      base[key] = value;
-      return base;
-  };
-
-  this.push_counter = function(key){
-      if(push_counters[key] === undefined){
-          push_counters[key] = 0;
-      }
-      return push_counters[key]++;
-  };
-
-  $.each($(this).serializeArray(), function() {
-    // skip invalid keys
-    if(!patterns.validate.test(this.name)){
-      return;
-    }
-
-    var k,
-      keys = this.name.match(patterns.key),
-      merge = this.value,
-      reverse_key = this.name;
-
-    while((k = keys.pop()) !== undefined) {
-      // adjust reverse_key
-      reverse_key = reverse_key.replace(new RegExp("\\[" + k + "\\]$"), '');
-
-      // push
-      if(k.match(patterns.push)){
-          merge = self.build([], self.push_counter(reverse_key), merge);
-      }
-
-      // fixed
-      else if(k.match(patterns.fixed)){
-          merge = self.build([], k, merge);
-      }
-
-      // named
-      else if(k.match(patterns.named)){
-          merge = self.build({}, k, merge);
-      }
-    }
-
-    json = $.extend(true, json, merge);
-  });
-
-  return json;
-};
-
-$(document).ready(function() {
-  //$('#config').change(configChanged);
+$.extend(FormSerializer.patterns, {
+  validate: /^[a-z][a-z0-9_-]*(?:\[(?:\d*|[a-z0-9_-]+)\])*$/i,
+  key:      /[a-z0-9_-]+|(?=\[\])/gi,
+  named:    /^[a-z0-9_-]+$/i
 });
+
+// $.fn.serializeObject = function() {
+//   var self = this,
+//       json = {},
+//       push_counters = {},
+//       patterns = {
+//           "validate": /^[a-zA-Z][a-zA-Z0-9_-]*(?:\[(?:\d*|[a-zA-Z0-9_-]+)\])*$/,
+//           "key":      /[a-zA-Z0-9_-]+|(?=\[\])/g,
+//           "push":     /^$/,
+//           "fixed":    /^\d+$/,
+//           "named":    /^[a-zA-Z0-9_-]+$/
+//       };
+
+
+//   this.build = function(base, key, value){
+//       base[key] = value;
+//       return base;
+//   };
+
+//   this.push_counter = function(key){
+//       if(push_counters[key] === undefined){
+//           push_counters[key] = 0;
+//       }
+//       return push_counters[key]++;
+//   };
+
+//   $.each($(this).serializeArray(), function() {
+//     // skip invalid keys
+//     if(!patterns.validate.test(this.name)){
+//       return;
+//     }
+
+//     var k,
+//       keys = this.name.match(patterns.key),
+//       merge = this.value,
+//       reverse_key = this.name;
+
+//     while((k = keys.pop()) !== undefined) {
+//       // adjust reverse_key
+//       reverse_key = reverse_key.replace(new RegExp("\\[" + k + "\\]$"), '');
+
+//       // push
+//       if(k.match(patterns.push)){
+//           merge = self.build([], self.push_counter(reverse_key), merge);
+//       }
+
+//       // fixed
+//       else if(k.match(patterns.fixed)){
+//           merge = self.build([], k, merge);
+//       }
+
+//       // named
+//       else if(k.match(patterns.named)){
+//           merge = self.build({}, k, merge);
+//       }
+//     }
+
+//     json = $.extend(true, json, merge);
+//   });
+
+//   return json;
+// };
 
 var configChanged = function() {
   var file = document.getElementById('config').files[0];
@@ -131,61 +133,186 @@ var parseSeriesInfo = function(series) {
   myDiv.html(htmlContents);
 }
 
+var generateRelease = function(release) {
+  var htmlContents = '';
+  htmlContents += '<fieldset>';
+
+  // Release
+  htmlContents += '<legend><input type="text" name="games[][releases][][release]" value="';
+  if (release && release['release']) {
+    htmlContents += release['release'];
+  }
+  htmlContents += '"></legend>';
+
+  // Release Date
+  htmlContents += ' <label>Release Date:</label><input type="text" name="games[][releases][][release-date]" value="';
+  if (release && release['release-date']) {
+    htmlContents += release['release-date'];
+  }
+  htmlContents += '"><br />';
+
+  // Release Accuracy
+  htmlContents += ' <label>Release Accuracy:</label><input type="text" name="games[][releases][][release-accuracy]" value="';
+  if (release && release['release-accuracy']) {
+    htmlContents += release['release-accuracy'];
+  }
+  htmlContents += '"><br />';
+
+  // Console
+  htmlContents += ' <label>Console:</label><input type="text" name="games[][releases][][console]" value="';
+  if (release && release['console']) {
+    htmlContents += release['console'];
+  }
+  htmlContents += '"><br />';
+
+  htmlContents += '</fieldset>';
+  return htmlContents;
+}
+
+var generateCatGoal = function(goal) {
+  var htmlContents = '';
+
+  htmlContents += '<label>Goal:</label><input type="text" name="games[][categories][][cat-goals][]" value="';
+  if (goal) {
+    htmlContents += goal;
+  }
+  htmlContents += '">';
+
+  return htmlContents;
+}
+
+var generateCategory = function(cat) {
+  //   "categories": [
+  //     {
+  //       "cat-name": "Normal Completion",
+  //       "cat-estimate": 4,
+  //       "cat-goals": [
+  //         "Level 1",
+  //         "Level 2",
+  //         "Level 3",
+  //         "Level 4",
+  //         "Level 5",
+  //         "Level 6",
+  //         "Level 7",
+  //         "Level 8",
+  //         "Level 9"
+  //       ]
+  //     },
+  //     {
+  //       "cat-name": "Second Quest",
+  //       "cat-estimate": 6,
+  //       "cat-goals": [
+  //         "Level 1",
+  //         "Level 2",
+  //         "Level 3",
+  //         "Level 4",
+  //         "Level 5",
+  //         "Level 6",
+  //         "Level 7",
+  //         "Level 8",
+  //         "Level 9"
+  //       ],
+  //       "is-timeline": false
+  //     }
+  //   ]
+  var htmlContents = '';
+  htmlContents += '<fieldset>';
+
+  // cat-name
+  htmlContents += '<legend><input type="text" name="games[][categories][][cat-name]" value="';
+  if (cat && cat['cat-name']) {
+    htmlContents += cat['cat-name'];
+  }
+  htmlContents += '"></legend>';
+
+  // Estimate
+  htmlContents += '<label>Estimate</label><input type="text" name="games[][categories][][cat-estimate]" value="';
+  if (cat && cat['cat-estimate']) {
+    htmlContents += cat['cat-estimate'];
+  }
+  htmlContents += '"><br />';
+
+  // Is Timeline
+  htmlContents += '<label>Is Timeline:</label><input type="checkbox" name="games[][categories][][is-timeline]" ';
+  if (cat && cat['is-timeline']) {
+    htmlContents += 'checked="checked"';
+  }
+  htmlContents += '"><br />';
+
+  // Goals
+
+  htmlContents += '</fieldset>';
+  return htmlContents;
+}
+
+var generateGame = function(game) {
+  var htmlContents = '';
+  htmlContents += '<fieldset>';
+
+  // Name
+  htmlContents += '<legend><input type="text" name="games[][name]" value="';
+  if (game && game['name']) {
+    htmlContents += game['name'];
+  }
+  htmlContents += '"></legend>';
+
+  // Shortcode
+  htmlContents += '<label>Short Code:</label><input type="text" name="games[][shortcode]" value="';
+  if (game && game['shortcode']) {
+    htmlContents += game['shortcode'];
+  }
+  htmlContents += '"><br />';
+
+  // Is Licenced
+  htmlContents += '<label>Is Licenced:</label><input type="checkbox" name="games[][is-licenced]" ';
+  if (game && game['is-licenced']) {
+    htmlContents += 'checked="checked"';
+  }
+  htmlContents += '"><br />';
+
+  // Is Timeline
+  htmlContents += '<label>Is Timeline:</label><input type="checkbox" name="games[][is-timeline]" ';
+  if (game && game['is-timeline']) {
+    htmlContents += 'checked="checked"';
+  }
+  htmlContents += '"><br />';
+
+  // Timeline Position
+  htmlContents += '<label>Timeline Position:</label><input type="text" name="games[][timeline-position]" value="';
+  if (game && game['timeline-position']) {
+    htmlContents += game['timeline-position'];
+  }
+  htmlContents += '"><br />';
+
+  // Releases
+  htmlContents += '<fieldset><legend>Releases</legend>';
+  if (game && game['releases']) {
+    game['releases'].forEach(function (r, i) {
+      htmlContents += generateRelease(r);
+    });
+  }
+  htmlContents += '</fieldset>';
+
+  // // Categories
+  // htmlContents += '<fieldset><legend>Categories</legend>';
+  // if (game && game['categories']) {
+  //   game['categories'].forEach(function (c, i) {
+  //     htmlContents += generateCategory(c);
+  //   });
+  // }
+  // htmlContents += '</fieldset>';
+
+  htmlContents += '</fieldset>';
+
+  return htmlContents;
+}
+
 var parseGameInfo = function(games) {
   var myDiv = $('#games-inputs');
   var htmlContents = '';
 
   games.forEach(function (g, i) {
-    // {
-    //   "name": "The Legend of Zelda",
-    //   "shortcode": "tloz",
-    //   "is-licenced": true,
-    //   "is-timeline": true,
-    //   "timeline-position": 2.7,
-    //   "releases": [
-    //     {
-    //       "release": "NES",
-    //       "release-date": "1986-02-21T00:00:000Z",
-    //       "release-accuracy": "day",
-    //       "console": "NES"
-    //     },
-    //   ],
-    //   "categories": [
-    //     {
-    //       "cat-name": "Normal Completion",
-    //       "cat-estimate": 4,
-    //       "cat-goals": [
-    //         "Level 1",
-    //         "Level 2",
-    //         "Level 3",
-    //         "Level 4",
-    //         "Level 5",
-    //         "Level 6",
-    //         "Level 7",
-    //         "Level 8",
-    //         "Level 9"
-    //       ]
-    //     },
-    //     {
-    //       "cat-name": "Second Quest",
-    //       "cat-estimate": 6,
-    //       "cat-goals": [
-    //         "Level 1",
-    //         "Level 2",
-    //         "Level 3",
-    //         "Level 4",
-    //         "Level 5",
-    //         "Level 6",
-    //         "Level 7",
-    //         "Level 8",
-    //         "Level 9"
-    //       ],
-    //       "is-timeline": false
-    //     }
-    //   ]
-    // },
-    htmlContents += '<fieldset><legend><input type="text" name="games[][name]" value="' + g['name'] + '"></legend>';
-    htmlContents += '</fieldset>'
+    htmlContents += generateGame(g);
   });
 
   myDiv.html(htmlContents);
